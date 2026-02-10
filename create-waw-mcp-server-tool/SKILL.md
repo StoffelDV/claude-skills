@@ -93,7 +93,43 @@ Document the following patterns from existing tools:
 - How RLS guards work (check event/entity exists before operating)
 - Parameter normalization patterns (trim strings, bound numbers, default values)
 
-### Phase 3: Design the Tool
+### Phase 3: Input Dependency Analysis
+
+Before designing the tool, map every required input to its source. This prevents tools that are impossible to call without prior context.
+
+**Step 1 — List all required inputs:**
+For the proposed tool, enumerate every parameter that a caller must provide. For each one, determine:
+- Is it a **user-provided value** (e.g., a title, a date, free text)?
+- Is it a **system ID** that must be looked up first (e.g., `contact_id`, `event_id`, `quote_id`)?
+
+**Step 2 — Map IDs to existing tools:**
+For every system ID, identify which existing MCP tool can provide it:
+
+| Required Input | Source Tool | How to get it |
+|----------------|------------|---------------|
+| `event_id` | `listallevents` | Search by date range or list upcoming events |
+| `contact_id` | `getcontacts` | Search by name/email or list all contacts |
+| `quote_id` | `getquotes` | Filter by event_id or list all quotes |
+| `invoice_id` | `getinvoices` | Filter by event_id or list all invoices |
+| `note_id` | `list_event_notes` | List notes for a specific event |
+
+If no existing tool can provide a required ID, flag this as a gap — a new lookup tool may need to be created alongside the proposed tool.
+
+**Step 3 — Define the prerequisite chain:**
+Write out the exact sequence of tool calls needed to go from a user's natural language request to a successful tool invocation:
+
+```
+Example: User says "Create a meeting with John next Tuesday"
+
+1. getcontacts(query: "John") → returns contact_id
+2. create_meeting(contact_id: "...", date: "2025-02-04", ...)
+```
+
+This chain MUST be documented in the tool's description (see Phase 4).
+
+---
+
+### Phase 4: Design the Tool
 
 Design the new tool following these MCP best practices:
 
@@ -108,12 +144,23 @@ Write a clear description that answers:
 2. **How** does it work? (direct query vs. RPC, fuzzy search vs. exact match)
 3. **What** are the defaults and limits?
 4. **What** security model applies? (mention RLS)
+5. **How** to gather required inputs — which tools to call first and in what order
+
+The description must include a **"Prerequisite data"** section that tells the AI chatbot exactly how to resolve required inputs from a user's natural language request. This is critical — without it, the AI won't know which tools to call before invoking this one.
 
 Example:
 ```
-"List all songs in the user's library with optional search and tag filtering.
-Uses direct table query with RLS enforcement. Default limit: 100, max: 500.
-Supports fuzzy search on title and artist fields."
+"Creates a meeting linked to an event, adds participants, and triggers email invitations.
+
+Prerequisite data — gather before calling this tool:
+- event_id: Call listallevents to find the event, or create_event to make a new one.
+- contact_ids: Call getcontacts(query: \"<name>\") for each participant to resolve their IDs.
+
+Use this tool when:
+- The user wants to schedule a meeting for an event
+- The user wants to invite contacts to a meeting
+
+Uses direct table insert with RLS enforcement. Requires authenticated user."
 ```
 
 #### Input Schema
@@ -150,8 +197,9 @@ return {
 - Bound numeric inputs (min 1, max 500)
 - Guard write operations with existence checks
 - Never expose raw database error details
+- **CRITICAL — INSERT operations and `user_id`:** Most tables have RLS INSERT policies like `WITH CHECK (auth.uid() = user_id)`. Supabase does NOT auto-populate `user_id` — you must explicitly set it. Before any INSERT, resolve the user's ID via `this.supabase.auth.getUser()` and include `user_id: user.id` in the row. Without this, the insert will fail with "new row violates row-level security policy".
 
-### Phase 4: Propose the Implementation
+### Phase 5: Propose the Implementation
 
 Present the proposal to the user in this format:
 
@@ -178,6 +226,26 @@ One-line description of what this tool does.
 ### RLS policies
 - What access model applies
 
+## Input Dependency Analysis
+
+### Required inputs and their sources
+| Input | Type | Source | How to resolve |
+|-------|------|--------|---------------|
+| event_id | UUID | `listallevents` | Search by date or list upcoming events |
+| contact_id | UUID | `getcontacts` | Search by name: `getcontacts(query: "John")` |
+| ... | ... | ... | ... |
+
+### Prerequisite tool chain
+Example workflow from user request to tool execution:
+1. User says: "..."
+2. Call `<tool_a>` to get `<id>` → returns `<id>`
+3. Call `<tool_b>` with `<id>` to get `<other_id>` → returns `<other_id>`
+4. Call `<proposed_tool>` with all resolved inputs
+
+### Gaps identified
+- List any required data that no existing tool can provide
+- Propose companion tools if needed
+
 ## Tool Specification
 
 ### Name
@@ -185,6 +253,7 @@ One-line description of what this tool does.
 
 ### Description
 Full description text (for the tool registration).
+MUST include "Prerequisite data" section explaining how to gather required inputs.
 
 ### Input Schema
 ```typescript
