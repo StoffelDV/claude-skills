@@ -69,6 +69,8 @@ Create a summary explaining:
 
 ### Step 3: Analyze and redesign for mobile
 
+> **Wedding Pro Mindset** — Apply as a lens throughout this step. Run the full Wedding Pro Checklist: user value (which JTBD?), workflow fit (where in the lead > booked > paid flow?), friction audit (how many taps?), failure cases (Saturday 23:30, 4G, 2% battery), output quality (does it look professional?), scope sanity (worth it at 25 EUR/month?). Mobile is where wedding pros live — extra strictness on speed, thumb-friendliness, and offline resilience.
+
 Before jumping to code, analyze the web feature through a mobile lens:
 
 **1. Identify the core purpose and actions:**
@@ -194,6 +196,13 @@ Tone: practical, concrete, opinionated where needed, no fluff, no buzzwords.
 |---------|-----------|--------|
 | [Feature name] | [UI component] | [Why appropriate for mobile] |
 | ... | ... | ... |
+
+### Wedding Pro Checklist
+- **JTBD:** [Which job(s) does this feature serve?]
+- **Workflow fit:** [Where in lead > quote > booked > prep > event day > aftercare?]
+- **Friction audit:** [Taps to complete core action, auto-fill opportunities]
+- **Failure cases:** [Saturday 23:30 test, incomplete data, wrong timezone]
+- **30-second win:** [What does the user get immediately?]
 
 ### UI/UX Best Practices Applied
 - **Thumb zones:** [How primary actions are positioned]

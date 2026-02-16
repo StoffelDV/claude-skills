@@ -131,6 +131,8 @@ This chain MUST be documented in the tool's description (see Phase 4).
 
 ### Phase 4: Design the Tool
 
+> **Wedding Pro Mindset** — Apply as a lens throughout this phase. Every tool must map to a real JTBD (win bookings, stay organized, avoid mistakes, get paid, communicate clearly, look professional). The prerequisite chain should mirror how wedding pros think: events > status > next action. Tool descriptions must use plain language a solo vendor would understand — no jargon, no abstract object names.
+
 Design the new tool following these MCP best practices:
 
 #### Naming
@@ -212,6 +214,9 @@ Present the proposal to the user in this format:
 
 ## Summary
 One-line description of what this tool does.
+
+## JTBD served
+Which wedding-pro job(s) does this tool support? (win bookings / stay organized / avoid mistakes / get paid / communicate clearly / look professional)
 
 ## Database Research
 
