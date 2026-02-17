@@ -133,6 +133,8 @@ This chain MUST be documented in the tool's description (see Phase 4).
 
 > **Wedding Pro Mindset** — Apply as a lens throughout this phase. Every tool must map to a real JTBD (win bookings, stay organized, avoid mistakes, get paid, communicate clearly, look professional). The prerequisite chain should mirror how wedding pros think: events > status > next action. Tool descriptions must use plain language a solo vendor would understand — no jargon, no abstract object names.
 
+> **Positive Psychology** — When the tool performs a create or update action that maps to a celebration moment (booking confirmed, quote sent, invoice created, payment recorded), document the appropriate celebration tier in the tool's description. This allows the AI chatbot (Milo) to respond with encouraging, Caretaker-toned language that matches the tier: micro ("Done."), standard ("Quote sent. Your client will receive it shortly."), or milestone ("Payment received. You're all set."). See the positive-psychology skill for the full copy bank and tier system.
+
 Design the new tool following these MCP best practices:
 
 #### Naming

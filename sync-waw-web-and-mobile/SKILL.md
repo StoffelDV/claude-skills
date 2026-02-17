@@ -71,6 +71,13 @@ Create a summary explaining:
 
 > **Wedding Pro Mindset** — Apply as a lens throughout this step. Run the full Wedding Pro Checklist: user value (which JTBD?), workflow fit (where in the lead > booked > paid flow?), friction audit (how many taps?), failure cases (Saturday 23:30, 4G, 2% battery), output quality (does it look professional?), scope sanity (worth it at 25 EUR/month?). Mobile is where wedding pros live — extra strictness on speed, thumb-friendliness, and offline resilience.
 
+> **Positive Psychology** — When porting celebration patterns to mobile:
+> - `canvas-confetti` does not work in React Native. Use `react-native-confetti-cannon` or Lottie animations as equivalents.
+> - Add haptic feedback as a supplementary channel: light impact for tier 1 (micro), medium for tier 2 (standard), heavy for tier 3 (milestone). Use `expo-haptics`.
+> - All celebration copy (EN + NL) and tier classification port directly without changes.
+> - Respect the device's reduced-motion accessibility setting via `AccessibilityInfo.isReduceMotionEnabled()`.
+> - See the positive-psychology skill REFERENCE.md for the complete tier system and copy bank.
+
 Before jumping to code, analyze the web feature through a mobile lens:
 
 **1. Identify the core purpose and actions:**
