@@ -345,6 +345,21 @@ RLS. Default limit: 100, max: 500."
 
 ---
 
+## Deployment
+
+The MCP server is a Cloudflare Worker that auto-deploys from Git. **No manual `wrangler deploy` needed.**
+
+To deploy changes:
+1. Commit your changes in the `~/Documents/pulse-supabase-mcp-server/` repo
+2. Push to `main`: `git push`
+3. Cloudflare automatically builds and deploys on push
+
+The deployed URL is: `https://pulse-supabase-mcp-server.delicate-paper-4560.workers.dev/mcp`
+
+## Database column reference
+
+The `events` table uses `name` (NOT `title`) for the event name. Always verify column names against `~/Documents/pulse-crm/src/integrations/supabase/types.ts` before writing `.select()` queries.
+
 ## Resources
 
 - **MCP server source:** `~/Documents/pulse-supabase-mcp-server/src/index.ts`
