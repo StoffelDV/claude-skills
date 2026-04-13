@@ -11,7 +11,14 @@ const OUTPUT_DIR = join(process.env.HOME, "Documents", "waw-generated-images");
 
 // Parse CLI arguments
 function parseArgs(args) {
-  const parsed = { prompt: null, groups: null, aspectRatio: "1:1", size: "2K" };
+  const parsed = {
+    prompt: null,
+    groups: null,
+    aspectRatio: "1:1",
+    size: "2K",
+    baseImage: null,
+    extraRefs: [],
+  };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case "--prompt":
@@ -26,9 +33,38 @@ function parseArgs(args) {
       case "--size":
         parsed.size = args[++i];
         break;
+      case "--base-image":
+        // Absolute path to an existing image to edit (image-to-image mode)
+        parsed.baseImage = args[++i];
+        break;
+      case "--extra-refs":
+        // Comma-separated absolute paths to additional reference images
+        parsed.extraRefs = args[++i].split(",").map((p) => p.trim()).filter(Boolean);
+        break;
     }
   }
   return parsed;
+}
+
+// Load a single image file from an absolute path as an inline data part
+function loadImagePart(filePath) {
+  if (!existsSync(filePath)) {
+    console.error(`Warning: image not found at ${filePath}`);
+    return null;
+  }
+  const data = readFileSync(filePath);
+  const lower = filePath.toLowerCase();
+  const mimeType = lower.endsWith(".png")
+    ? "image/png"
+    : lower.endsWith(".webp")
+      ? "image/webp"
+      : "image/jpeg";
+  return {
+    inlineData: {
+      mimeType,
+      data: data.toString("base64"),
+    },
+  };
 }
 
 // Load reference images from specified groups as base64 inline data parts
@@ -89,8 +125,8 @@ async function main() {
     console.error("Error: --prompt is required");
     process.exit(1);
   }
-  if (!args.groups) {
-    console.error("Error: --groups is required (e.g. brand,professionals,milo)");
+  if (!args.groups && !args.baseImage) {
+    console.error("Error: either --groups or --base-image is required");
     process.exit(1);
   }
 
@@ -101,17 +137,39 @@ async function main() {
     process.exit(1);
   }
 
-  // Load reference images
-  const refParts = loadReferenceImages(args.groups);
-  if (refParts.length === 0) {
+  // Load reference images from groups (if any)
+  const groupRefParts = args.groups ? loadReferenceImages(args.groups) : [];
+  if (args.groups && groupRefParts.length === 0) {
     console.error("Error: no reference images found for the specified groups");
     process.exit(1);
   }
-  console.error(`Loaded ${refParts.length} reference image(s) from groups: ${args.groups}`);
 
-  // Build the content parts: reference images first, then the text prompt
+  // Load the base image for image-to-image editing (if provided)
+  let basePart = null;
+  if (args.baseImage) {
+    basePart = loadImagePart(args.baseImage);
+    if (!basePart) {
+      console.error(`Error: base image not found at ${args.baseImage}`);
+      process.exit(1);
+    }
+  }
+
+  // Load extra reference images from absolute paths (if any)
+  const extraRefParts = args.extraRefs
+    .map((p) => loadImagePart(p))
+    .filter(Boolean);
+
+  const totalRefs = (basePart ? 1 : 0) + groupRefParts.length + extraRefParts.length;
+  console.error(
+    `Loaded ${totalRefs} image(s): ${basePart ? "1 base image, " : ""}${groupRefParts.length} from groups${args.groups ? ` (${args.groups})` : ""}, ${extraRefParts.length} extra refs`
+  );
+
+  // Build the content parts: base image first (if editing), then refs, then text prompt.
+  // Order matters — putting the base image first makes it the clear "thing to edit".
   const contentParts = [
-    ...refParts,
+    ...(basePart ? [basePart] : []),
+    ...groupRefParts,
+    ...extraRefParts,
     { text: args.prompt },
   ];
 

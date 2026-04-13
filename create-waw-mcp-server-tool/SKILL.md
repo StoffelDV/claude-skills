@@ -347,14 +347,31 @@ RLS. Default limit: 100, max: 500."
 
 ## Deployment
 
-The MCP server is a Cloudflare Worker that auto-deploys from Git. **No manual `wrangler deploy` needed.**
+The MCP server is a Cloudflare Worker with auto-deployment via GitHub Actions.
 
-To deploy changes:
-1. Commit your changes in the `~/Documents/pulse-supabase-mcp-server/` repo
-2. Push to `main`: `git push`
-3. Cloudflare automatically builds and deploys on push
+### Workflow
 
-The deployed URL is: `https://pulse-supabase-mcp-server.delicate-paper-4560.workers.dev/mcp`
+1. Work on a `feat/*` branch in `~/Documents/pulse-supabase-mcp-server/`
+2. Merge to `acceptance` → GitHub Actions deploys to `pulse-mcp-acc`
+3. Test on acc: `https://pulse-mcp-acc.delicate-paper-4560.workers.dev/mcp`
+4. Merge `acceptance` → `main` → GitHub Actions deploys to production
+
+### Quick iteration (acceptance)
+
+For fast testing without going through git:
+```bash
+cd ~/Documents/pulse-supabase-mcp-server
+npm run deploy:acc
+```
+
+### URLs
+
+| Environment | Worker | URL |
+|---|---|---|
+| Acceptance | `pulse-mcp-acc` | `https://pulse-mcp-acc.delicate-paper-4560.workers.dev/mcp` |
+| Production | `pulse-supabase-mcp-server` | `https://pulse-supabase-mcp-server.delicate-paper-4560.workers.dev/mcp` |
+
+**Never deploy directly to production.** Use `./scripts/promote.sh` in the pulse-crm repo, or merge MCP `acceptance` → `main` manually.
 
 ## Database column reference
 
