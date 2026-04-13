@@ -353,7 +353,7 @@ The MCP server is a Cloudflare Worker with auto-deployment via GitHub Actions.
 
 1. Work on a `feat/*` branch in `~/Documents/pulse-supabase-mcp-server/`
 2. Merge to `acceptance` → GitHub Actions deploys to `pulse-mcp-acc`
-3. Test on acc: `https://pulse-mcp-acc.delicate-paper-4560.workers.dev/mcp`
+3. Test on acc: `https://mcp-acc.withoutaworry.com/mcp`
 4. Merge `acceptance` → `main` → GitHub Actions deploys to production
 
 ### Quick iteration (acceptance)
@@ -368,8 +368,8 @@ npm run deploy:acc
 
 | Environment | Worker | URL |
 |---|---|---|
-| Acceptance | `pulse-mcp-acc` | `https://pulse-mcp-acc.delicate-paper-4560.workers.dev/mcp` |
-| Production | `pulse-supabase-mcp-server` | `https://pulse-supabase-mcp-server.delicate-paper-4560.workers.dev/mcp` |
+| Acceptance | `pulse-mcp-acc` | `https://mcp-acc.withoutaworry.com/mcp` |
+| Production | `pulse-supabase-mcp-server` | `https://mcp.withoutaworry.com/mcp` |
 
 **Never deploy directly to production.** Use `./scripts/promote.sh` in the pulse-crm repo, or merge MCP `acceptance` → `main` manually.
 
