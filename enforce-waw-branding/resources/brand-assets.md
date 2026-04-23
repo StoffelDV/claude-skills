@@ -188,3 +188,39 @@ When a new branded component is created:
 - `src/components/timeline/TimelineItem.tsx`
 - `src/components/timeline/AddTimelineItem.tsx`
 - `src/components/invoicing/wizard/PreviewCard.tsx`
+
+---
+
+## Tab-based navigation (added 2026-04-22, updated 2026-04-22)
+
+The authenticated app-area uses tab-based navigation. Policy flipped on 2026-04-22: default clicks navigate in-tab. New tabs ONLY via (a) "+" button, (b) right-click "Open in new tab", (c) `askMilo` focusing the Milo tab. When reviewing any screen or new code:
+
+**Navigation (policy flipped — in-tab by default):**
+- [ ] Regular clicks navigate WITHIN the current tab via `useNavigate()` or `<TabLink>`. They do NOT spawn new tabs.
+- [ ] `<TabLink to=... title=... iconKey=...>` is used for top-level links (wraps `<a>` + in-tab navigate on click).
+- [ ] Entity lists/cards (events, contacts, invoices, quotes, songs, tasks, equipment) are wrapped in `<TabContextMenu entity=... id=... url=... label=... iconKey=...>` so right-click gives "Open in new tab" + "Ask Milo". The `label` MUST be the real entity name, never generic.
+- [ ] Detail pages call `useRenameCurrentTab(entityName, iconKey)` AFTER the entity state is declared (avoid TDZ) so the tab label reflects the open entity.
+- [ ] New app-area routes go in `src/components/navigation/AppRoutes.tsx`, not the top-level BrowserRouter in `App.tsx` (unless genuinely public/auth/landing).
+- [ ] BottomDock items call `useNavigate()` (in-tab) — NOT `openTab`.
+
+**Icon consistency (non-negotiable):**
+- [ ] Tab icons match the icons the dock/header uses for the same concept. Single source of truth: `src/lib/tabs/tab-icon.tsx`. One dock glyph → one tab glyph → one header glyph.
+- [ ] All icons import from `@/lib/icons` (the project icon barrel). Never directly from `lucide-react` or `@heroicons/react`.
+- [ ] New nav destination in the dock → same commit also adds: (a) `iconKey` in `src/lib/tabs/types.ts`, (b) mapping in `tab-icon.tsx`, (c) URL entry in `url-to-title.ts`.
+- [ ] When replacing a dock icon, update `tab-icon.tsx` in the same commit.
+
+**Tab bar visual:**
+- [ ] TabBar sits between `<header>` and `<main>` in `MainLayout`, NOT above the header.
+- [ ] Strip bg: `bg-primary` (WaW teal `#034b56`). Active tab lifts down into the content area with `rounded-t-lg` (browser-tab effect).
+- [ ] Active non-Milo tab: `bg-white` with `text-[#034b56]`. Active Milo tab: `bg-[#3ecf88]`.
+- [ ] Inactive tabs: `text-white/70` on teal, readable, with visible label AND icon.
+- [ ] Milo tab is pinned (no × button), leftmost, ALWAYS titled "Milo" regardless of stored state.
+- [ ] "+" button sits directly after the last tab, not far-right.
+- [ ] Tab titles truncate at max-width ~160-180px with `title=` attribute on hover.
+- [ ] Every non-Milo tab has an icon from `TabIcon` next to the label — no bare-text tabs.
+
+**404 / unknown URLs:**
+- [ ] Unknown in-tab URLs render `NotFound` wrapped in `MainLayout fullWidth` — header + tabbar + dock stay visible, single white card with Compass icon, "Go back" + "Back to dashboard" actions. i18n keys under `notFound.*`.
+
+**Modals and wizards:**
+- [ ] Stay in-place — they overlay the current tab, NEVER open a new tab. No exception.

@@ -194,6 +194,12 @@ source ~/.zshrc 2>/dev/null; node /Users/stoffeldevidts/Documents/claude-skills/
 
 \* Either `--groups` OR `--base-image` must be provided.
 
+**Hard limits enforced by the script:**
+- **Max 4 reference images total** (base-image + extra-refs + group refs combined). The script auto-trims if exceeded.
+- **Auto-compression via ffmpeg**: all reference images are resized to max 768px wide and compressed to JPEG (~50-80KB each) before sending to Gemini. This keeps token costs low and avoids Gemini 500 errors from oversized payloads.
+- You do NOT need to compress images manually. The script handles it.
+- Prefer `--base-image` with 0-1 extra refs (most reliable). Using `--groups` with large folders will auto-trim to 4.
+
 ### 4b. Image-to-image editing (for fixing a single element)
 
 Use this when the user approves the overall composition but rejects a specific element (most commonly: "Milo doesn't look like Milo" or "that character looks wrong"). Do NOT regenerate from scratch — you'll lose the rest of the layout.

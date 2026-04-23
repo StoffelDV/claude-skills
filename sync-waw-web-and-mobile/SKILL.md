@@ -350,3 +350,17 @@ Reference both codebases:
 - Web: `~/Documents/pulse-crm`
 - Mobile: `~/Documents/waw-mobile-1`
 - Shared: Same Supabase project (check `supabase/` folders in both)
+
+---
+
+## Tab-based navigation (added 2026-04-22)
+
+The tab-based navigation rolled out to pulse-crm (web) on 2026-04-22 is **desktop/web only**. When porting a web feature to mobile:
+
+- Replace `openTab(url, opts)` with standard mobile navigation (`navigation.navigate(...)` or route push).
+- Omit `<TabContextMenu>` entirely — mobile uses long-press action sheets or inline actions instead of right-click menus.
+- Do not port `<TabLink>` — mobile uses `<Pressable>` + native navigation.
+- `useRenameCurrentTab` has no mobile equivalent; drop the call.
+- The Milo tab concept is web-only. On mobile, Milo remains a dedicated tab in the bottom nav or a side drawer.
+
+Mobile screens stay single-page-at-a-time. If a web flow relies on multiple tabs being open at once (e.g. comparing an invoice to an event), design a mobile-specific shortcut (recent items list, quick-switch gesture) instead of replicating tabs.

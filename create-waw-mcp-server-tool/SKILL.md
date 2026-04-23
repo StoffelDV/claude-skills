@@ -373,6 +373,29 @@ npm run deploy:acc
 
 **Never deploy directly to production.** Use `./scripts/promote.sh` in the pulse-crm repo, or merge MCP `acceptance` → `main` manually.
 
+## ⚠️ Tool-name sync checklist (required)
+
+Adding, renaming, or removing an MCP tool changes the public surface every MCP client relies on. **Propagate the change everywhere the tool is referenced in the SAME PR**, otherwise system prompts, docs, and example skills silently drift out of sync.
+
+When you add, rename, or remove a tool, update ALL of the following:
+
+- [ ] `pulse-crm/supabase/functions/_shared/milo-system-prompt.ts` — any hardcoded tool names in guidance text
+- [ ] `pulse-crm/supabase/functions/milo-chat-claude/` — any tool references in the prompt builder
+- [ ] `pulse-crm/supabase/functions/milo-vercel-chat/` — cost table entries or system defaults if relevant
+- [ ] `pulse-crm/src/lib/milo-vercel/tool-labels.ts` — user-friendly label pairs (running/done, EN+NL). NEW tools without an entry fall back to the generic "Working/Done" labels — add one for UX polish.
+- [ ] `pulse-crm/src/pages/MiloVercel.tsx` — the `DEFAULT_SYSTEM_PROMPT` constant if it names tools
+- [ ] `pulse-crm/docs/milo-vercel-testing.md` — tool inventory section
+- [ ] This skill — the "Current public tool inventory" line below
+- [ ] `pulse-supabase-mcp-server/README.md` — tool list if present
+- [ ] Any `MILO_AI_GUIDELINES.md` references that name specific tools
+- [ ] Any example skills in the repo that invoke the renamed/removed tool
+
+**Preferred pattern — don't hardcode tool names in prompts.** New system prompts should refer generically ("use the available WaW MCP tools to fetch data") instead of listing specific names. The AI discovers tools at runtime via `tools/list`. Hardcoded names are only for docs and skills that teach the model *when* to call a specific tool.
+
+**When renaming a tool**, also keep a backwards-compatible alias in the MCP server for at least one release — register the old name as a thin wrapper calling the new one. That prevents in-flight client conversations from breaking mid-session.
+
+**Current public tool inventory (update when you add/remove):** create_catalogue_item, create_event, create_event_note, create_event_task, get_availability, get_email_thread, get_event_timeline, getcontacts, getinvoices, getquotes, GetExtendedInformationPerEvent, link_contacts_to_events, list_catalogue, list_email_threads, list_event_notes, list_meetings, listallevents, manage_availability_overrides, manage_weekly_schedule, schedule_meeting, unlink_contacts_from_events, update_catalogue, update_event, update_event_note, update_event_timeline, update_meeting, upsert_contact, upsert_event_note.
+
 ## Database column reference
 
 The `events` table uses `name` (NOT `title`) for the event name. Always verify column names against `~/Documents/pulse-crm/src/integrations/supabase/types.ts` before writing `.select()` queries.

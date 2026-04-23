@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { GoogleGenAI } from "@google/genai";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from "fs";
 import { join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
+import { tmpdir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REFS_DIR = join(__dirname, "..", "resources", "references");
@@ -46,50 +48,78 @@ function parseArgs(args) {
   return parsed;
 }
 
+const MAX_REF_IMAGES = 4;
+const MAX_REF_WIDTH = 768;
+const MAX_REF_BYTES = 500 * 1024; // 500KB target per ref image
+
+// Compress an image via ffmpeg: resize to max width and convert to JPEG
+function compressImage(filePath) {
+  const raw = readFileSync(filePath);
+  const rawKB = (raw.length / 1024).toFixed(0);
+
+  // Skip compression if already small enough
+  if (raw.length <= MAX_REF_BYTES) {
+    console.error(`  ${basename(filePath)}: ${rawKB}KB (already small, skipping)`);
+    const lower = filePath.toLowerCase();
+    const mimeType = lower.endsWith(".png") ? "image/png" : lower.endsWith(".webp") ? "image/webp" : "image/jpeg";
+    return { buf: raw, mimeType };
+  }
+
+  const tmpOut = join(tmpdir(), `waw-ref-${Date.now()}-${basename(filePath).replace(/\.\w+$/, ".jpg")}`);
+  try {
+    execSync(
+      `ffmpeg -y -i "${filePath}" -vf "scale='min(${MAX_REF_WIDTH},iw)':-1" -q:v 4 "${tmpOut}"`,
+      { stdio: "pipe" }
+    );
+    const buf = readFileSync(tmpOut);
+    const newKB = (buf.length / 1024).toFixed(0);
+    console.error(`  Compressed ${basename(filePath)}: ${rawKB}KB -> ${newKB}KB`);
+    return { buf, mimeType: "image/jpeg" };
+  } finally {
+    try { unlinkSync(tmpOut); } catch {}
+  }
+}
+
 // Load a single image file from an absolute path as an inline data part
 function loadImagePart(filePath) {
   if (!existsSync(filePath)) {
     console.error(`Warning: image not found at ${filePath}`);
     return null;
   }
-  const data = readFileSync(filePath);
-  const lower = filePath.toLowerCase();
-  const mimeType = lower.endsWith(".png")
-    ? "image/png"
-    : lower.endsWith(".webp")
-      ? "image/webp"
-      : "image/jpeg";
+  const { buf, mimeType } = compressImage(filePath);
   return {
     inlineData: {
       mimeType,
-      data: data.toString("base64"),
+      data: buf.toString("base64"),
     },
   };
 }
 
 // Load reference images from specified groups as base64 inline data parts
-function loadReferenceImages(groups) {
-  const parts = [];
+function loadReferenceImages(groups, maxImages) {
+  const allFiles = [];
   for (const group of groups.split(",")) {
     const groupDir = join(REFS_DIR, group.trim());
     if (!existsSync(groupDir)) {
       console.error(`Warning: reference group directory not found: ${groupDir}`);
       continue;
     }
-    const files = readdirSync(groupDir).filter((f) =>
-      /\.(png|jpg|jpeg|webp)$/i.test(f)
-    );
-    for (const file of files) {
-      const filePath = join(groupDir, file);
-      const data = readFileSync(filePath);
-      const mimeType = file.endsWith(".png") ? "image/png" : "image/jpeg";
-      parts.push({
-        inlineData: {
-          mimeType,
-          data: data.toString("base64"),
-        },
-      });
-    }
+    const files = readdirSync(groupDir)
+      .filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f))
+      .map((f) => join(groupDir, f));
+    allFiles.push(...files);
+  }
+
+  // Enforce max images limit
+  if (allFiles.length > maxImages) {
+    console.error(`Warning: ${allFiles.length} reference images found, limiting to ${maxImages}. Pass fewer groups or use --base-image instead.`);
+    allFiles.length = maxImages;
+  }
+
+  const parts = [];
+  for (const filePath of allFiles) {
+    const part = loadImagePart(filePath);
+    if (part) parts.push(part);
   }
   return parts;
 }
@@ -137,13 +167,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Load reference images from groups (if any)
-  const groupRefParts = args.groups ? loadReferenceImages(args.groups) : [];
-  if (args.groups && groupRefParts.length === 0) {
-    console.error("Error: no reference images found for the specified groups");
-    process.exit(1);
-  }
-
   // Load the base image for image-to-image editing (if provided)
   let basePart = null;
   if (args.baseImage) {
@@ -154,14 +177,29 @@ async function main() {
     }
   }
 
-  // Load extra reference images from absolute paths (if any)
-  const extraRefParts = args.extraRefs
-    .map((p) => loadImagePart(p))
-    .filter(Boolean);
+  // Calculate how many ref slots remain (base image counts as 1)
+  const baseCount = basePart ? 1 : 0;
+  const remainingSlots = MAX_REF_IMAGES - baseCount;
 
-  const totalRefs = (basePart ? 1 : 0) + groupRefParts.length + extraRefParts.length;
+  // Load extra reference images from absolute paths (if any)
+  let extraRefPaths = args.extraRefs;
+  if (extraRefPaths.length > remainingSlots) {
+    console.error(`Warning: ${extraRefPaths.length} extra refs exceeds limit, trimming to ${remainingSlots}`);
+    extraRefPaths = extraRefPaths.slice(0, remainingSlots);
+  }
+  const extraRefParts = extraRefPaths.map((p) => loadImagePart(p)).filter(Boolean);
+
+  // Load reference images from groups (if any), with remaining slots
+  const groupSlots = MAX_REF_IMAGES - baseCount - extraRefParts.length;
+  const groupRefParts = args.groups ? loadReferenceImages(args.groups, groupSlots) : [];
+  if (args.groups && groupRefParts.length === 0 && groupSlots > 0) {
+    console.error("Error: no reference images found for the specified groups");
+    process.exit(1);
+  }
+
+  const totalRefs = baseCount + groupRefParts.length + extraRefParts.length;
   console.error(
-    `Loaded ${totalRefs} image(s): ${basePart ? "1 base image, " : ""}${groupRefParts.length} from groups${args.groups ? ` (${args.groups})` : ""}, ${extraRefParts.length} extra refs`
+    `Loaded ${totalRefs} image(s): ${basePart ? "1 base image, " : ""}${groupRefParts.length} from groups${args.groups ? ` (${args.groups})` : ""}, ${extraRefParts.length} extra refs (max ${MAX_REF_IMAGES})`
   );
 
   // Build the content parts: base image first (if editing), then refs, then text prompt.
