@@ -1,5 +1,5 @@
 ---
-name: Create WaW MCP Server Tool
+name: create-waw-mcp-server-tool
 description: Use when the user wants to add a new tool to the WaW Pulse MCP server. Researches Supabase tables, RPC functions, and the pulse-crm codebase, then proposes a well-designed MCP tool following project conventions and MCP best practices.
 ---
 
@@ -394,7 +394,7 @@ When you add, rename, or remove a tool, update ALL of the following:
 
 **When renaming a tool**, also keep a backwards-compatible alias in the MCP server for at least one release — register the old name as a thin wrapper calling the new one. That prevents in-flight client conversations from breaking mid-session.
 
-**Current public tool inventory (update when you add/remove):** create_catalogue_item, create_event, create_event_note, create_event_task, get_availability, get_email_thread, get_event_timeline, getcontacts, getinvoices, getquotes, GetExtendedInformationPerEvent, link_contacts_to_events, list_catalogue, list_email_threads, list_event_notes, list_meetings, listallevents, manage_availability_overrides, manage_weekly_schedule, schedule_meeting, unlink_contacts_from_events, update_catalogue, update_event, update_event_note, update_event_timeline, update_meeting, upsert_contact, upsert_event_note.
+**Current public tool inventory (update when you add/remove):** create_catalogue_item, create_event, create_event_note, create_event_task, create_questionnaire_instance, get_availability, get_email_thread, get_event_timeline, get_questionnaire_instance, getcontacts, getinvoices, getquotes, GetExtendedInformationPerEvent, link_contacts_to_events, list_catalogue, list_email_threads, list_event_notes, list_meetings, list_questionnaire_templates, listallevents, manage_availability_overrides, manage_weekly_schedule, schedule_meeting, unlink_contacts_from_events, update_catalogue, update_event, update_event_note, update_event_timeline, update_meeting, update_questionnaire_instance, upsert_contact, upsert_event_note, upsert_questionnaire_template.
 
 ## Database column reference
 
